@@ -239,6 +239,20 @@ func (cl *Client) sessionTGT(realm string) (tgt messages.Ticket, sessionKey type
 	return
 }
 
+func (cl *Client) SessionTGT(realm string) (tgt messages.Ticket, sessionKey types.EncryptionKey, err error) {
+	err = cl.ensureValidSession(realm)
+	if err != nil {
+		return
+	}
+	s, ok := cl.sessions.get(realm)
+	if !ok {
+		err = fmt.Errorf("could not find TGT session for %s", realm)
+		return
+	}
+	_, tgt, sessionKey = s.tgtDetails()
+	return
+}
+
 func (cl *Client) sessionTimes(realm string) (authTime, endTime, renewTime, sessionExp time.Time, err error) {
 	s, ok := cl.sessions.get(realm)
 	if !ok {
