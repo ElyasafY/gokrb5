@@ -108,3 +108,22 @@ func (cl *Client) renewTicket(e CacheEntry) (CacheEntry, error) {
 	cl.Log("ticket renewed for %s (EndTime: %v)", spn.PrincipalNameString(), e.EndTime)
 	return e, nil
 }
+
+// GetCachedTicketEntry returns a ticket from the cache for the SPN.
+// Only a ticket that is currently valid will be returned.
+func (cl *Client) GetCachedTicketEntry(spn string) (*CacheEntry, bool) {
+	if e, ok := cl.cache.getEntry(spn); ok {
+		//If within time window of ticket return it
+		if time.Now().UTC().After(e.StartTime) && time.Now().UTC().Before(e.EndTime) {
+			cl.Log("ticket received from cache for %s", spn)
+			return &e, true
+		} else if time.Now().UTC().Before(e.RenewTill) {
+			e, err := cl.renewTicket(e)
+			if err != nil {
+				return nil, false
+			}
+			return &e, true
+		}
+	}
+	return nil, false
+}
